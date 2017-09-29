@@ -1,19 +1,36 @@
+#define _CRT_NONSTDC_NO_WARNINGS
+
 #include <ros/ros.h>
 #include <sensor_msgs/Joy.h>
 #include <geometry_msgs/Vector3.h>
 #include <std_msgs/Int8MultiArray.h>
+#include <stdio.h>
+#include <termios.h>
+
+//mode
+#define LOGICOOL
+//#define PS3
+//#define KEY
 
 std_msgs::Int8MultiArray button;
 geometry_msgs::Vector3 velocity;
 
+void getKey();
+
 double Base_Linear_Vel=0,Base_Angular_Vel=0;
 
 void JoyCallBack(const sensor_msgs::Joy& msg){
+#ifdef LOGICOOL
   velocity.x=(-1)*Base_Linear_Vel*msg.axes[0];
   velocity.y=Base_Linear_Vel*msg.axes[1];
   if(msg.buttons[4]) velocity.z=Base_Angular_Vel;
   else if(msg.buttons[5]) velocity.z=(-1)*Base_Angular_Vel;
   else velocity.z=0;
+#endif
+
+#ifdef PS3
+#endif
+
   ROS_INFO_STREAM_ONCE("HAVE JOY !!");
   //ROS_INFO("x=%f y=%f theta=%f",velocity.x,velocity.y,velocity.z);
 }
@@ -46,8 +63,79 @@ int main(int argc,char **argv){
  	}
 
   while(ros::ok()){
-    velocity_pub.publish(velocity);
-    ros::spinOnce();
+    #ifdef KEY
+  		getKey();
+    #endif
+    	velocity_pub.publish(velocity);
+    	ros::spinOnce();
  		loop_rate.sleep();
   }
 }
+
+#ifdef KEY
+void getKey(){
+	char key;
+
+	ROS_INFO("auf");
+
+	if(getchar()){
+  	switch(getchar()){
+  	case 'q':
+  		velocity.x=(-1)*Base_Linear_Vel;
+  		velocity.y=Base_Linear_Vel;
+  		velocity.z=0;
+  		break;
+  	case 'w':
+  		velocity.x=0;
+  		velocity.y=Base_Linear_Vel;
+  		velocity.z=0;
+  		break;
+  	case 'e':
+  		velocity.x=Base_Linear_Vel;
+  		velocity.y=Base_Linear_Vel;
+  		velocity.z=0;
+  		break;
+  	case 'a':
+  		velocity.x=(-1)*Base_Linear_Vel;
+  		velocity.y=0;
+  		velocity.z=0;
+  		break;
+  	case 'd':
+  		velocity.x=Base_Linear_Vel;
+  		velocity.y=0;
+  		velocity.z=0;
+  		break;
+  	case 'z':
+  		velocity.x=(-1)*Base_Linear_Vel;
+  		velocity.y=(-1)*Base_Linear_Vel;
+  		velocity.z=0;
+  		break;
+  	case 'x':
+  		velocity.x=0;
+  		velocity.y=(-1)*Base_Linear_Vel;
+  		velocity.z=0;
+  		break;
+  	case 'c':
+  		velocity.x=Base_Linear_Vel;
+  		velocity.y=(-1)*Base_Linear_Vel;
+  		velocity.z=0;
+  		break;
+  	case 'o':
+  		velocity.x=0;
+  		velocity.y=0;
+  		velocity.z=Base_Angular_Vel;
+  		break;
+  	case 'p':
+  		velocity.x=0;
+  		velocity.y=0;
+  		velocity.z=(-1)*Base_Angular_Vel;
+  		break;
+  	default:
+  		velocity.x=0;
+  		velocity.y=0;
+  		velocity.z=0;
+      break;
+  	}
+	}
+}
+#endif

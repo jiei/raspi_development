@@ -2,6 +2,13 @@
 #include <geometry_msgs/Vector3.h>
 #include <geometry_msgs/Pose2D.h>
 
+#ifndef pi
+#define pi 3.14159265358979
+#endif
+
+//#define RELATIVE
+#define ABSOLUTE
+
 geometry_msgs::Vector3 velocity;
 geometry_msgs::Pose2D pose;
 
@@ -21,6 +28,7 @@ int main(int argc,char **argv){
 
   double now=ros::Time::now().toSec();
   double old=now;
+  double V=0,phi=0;
 
   velocity.x=0;
   velocity.y=0;
@@ -31,9 +39,28 @@ int main(int argc,char **argv){
 
   while(ros::ok()){
     now=ros::Time::now().toSec();
+
+#ifdef RELATIVE
+    if(velocity.z==0.0){
+      V=sqrt(velocity.x*velocity.x+velocity.y*velocity.y);
+      if((velocity.x==0) && (velocity.y==0)) phi=0;
+      else phi=atan2(velocity.y,velocity.x);
+      pose.x+=V*cos(pose.theta+phi)*(now-old);
+      pose.y+=V*sin(pose.theta+phi)*(now-old);
+    }
+    pose.theta+=velocity.z*(now-old);
+    if(pose.theta>=pi) pose.theta=pose.theta-2*pi;
+    else if(pose.theta<=(-1)*pi) pose.theta=2*pi-pose.theta;
+#endif
+
+#ifdef ABSOLUTE
     pose.x+=velocity.x*(now-old);
     pose.y+=velocity.y*(now-old);
     pose.theta+=velocity.z*(now-old);
+    if(pose.theta>=pi) pose.theta=pose.theta-2*pi;
+    else if(pose.theta<=(-1)*pi) pose.theta=2*pi-pose.theta;
+#endif
+
     old=now;
 
     mimic_pose_pub.publish(pose);
