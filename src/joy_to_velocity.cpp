@@ -6,7 +6,9 @@
 #include <std_msgs/Int8MultiArray.h>
 #include <stdio.h>
 #include <termios.h>
-
+#include <sensor_msgs/Joy.h>
+#include <geometry_msgs/Vector3.h>
+#include <std_msgs/Int8MultiArray.h>
 //mode
 #define LOGICOOL
 //#define PS3
