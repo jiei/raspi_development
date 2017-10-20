@@ -1,0 +1,3 @@
+nav_msgs/Path path_msg
+---
+bool call_back_msg

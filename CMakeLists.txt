@@ -10,6 +10,7 @@ project(raspi_development)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  nav_msgs
   tf
   geometry_msgs
 )
@@ -55,11 +56,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+ add_service_files(
+   FILES
+   path_to_RViz.srv
+ )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -69,10 +69,11 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  nav_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -104,10 +105,10 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES 4wheel_steering
-#  CATKIN_DEPENDS roscpp std_msgs
-#  DEPENDS system_lib
+ INCLUDE_DIRS include
+ LIBRARIES raspi_development
+ CATKIN_DEPENDS roscpp std_msgs nav_msgs tf geometry_msgs
+ DEPENDS system_lib
 )
 
 ###########
@@ -205,3 +206,5 @@ add_executable(mimic_localization src/mimic_localization.cpp)
 target_link_libraries(mimic_localization ${catkin_LIBRARIES} )
 add_executable(make_path_CSV src/make_path_CSV.cpp)
 target_link_libraries(make_path_CSV ${catkin_LIBRARIES} )
+add_executable(path_RViz_bridge src/path_RViz_bridge.cpp)
+target_link_libraries(path_RViz_bridge ${catkin_LIBRARIES} )
