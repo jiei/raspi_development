@@ -28,7 +28,6 @@ struct PathData {
 
 void InputHeader(PathData *p);
 void CreatePathPoints(PathData *p);
-void WritePathOnFile(PathData p, std::string file_name, std::ofstream file);
 void WritePathOnRViz(PathData p);
 void ChooseNextStep(PathData *p);
 double CalcDistBetweenPoints(Point2D p1, Point2D p2);
@@ -80,12 +79,12 @@ int main(int argc, char **argv) {
       std::cout << "Saving path data on " << std::string(argv[1]) << " ..."
                 << '\n';
 
+      fout << path.N << ',' << path.n << ',' << path.max_velocity << ','
+           << path.final_velocity << ',' << path.target_angle << std::endl;
       for (int i = 0; i < path.points.size(); i++) {
-        fout << path.points[i].x << '/' << path.points[i].y;
-        if (i != (path.points.size()) - 1) {
-          fout << ',';
-        }
+        fout << path.points[i].x << '/' << path.points[i].y << ',';
       }
+      fout << '.' << std::endl; //ピリオドがパスデータ終了の合図
     }
     if (endflag) {
       break;
@@ -181,18 +180,6 @@ void WritePathOnRViz(PathData p) {
     geo_pose.pose.orientation.w = q.w();
 
     visualize_path.poses.push_back(geo_pose);
-  }
-}
-
-void WritePathOnFile(PathData p, std::string file_name, std::ofstream file) {
-  std::cout << "\n----------Path saving phase----------" << '\n';
-  std::cout << "Saving path data on " << file_name << " ..." << '\n';
-
-  for (int i = 0; i < p.points.size(); i++) {
-    file << p.points[i].x << '/' << p.points[i].y;
-    if (i != (p.points.size()) - 1) {
-      file << ',';
-    }
   }
 }
 

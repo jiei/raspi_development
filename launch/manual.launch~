@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="joy" name="joy_node" type="joy_node" />
+  <node pkg="raspi_development" name="joy_to_velocity" type="joy_to_velocity" output="screen"/>
+  <node pkg="raspi_development" name="ROS_nucleo_bridge" type="ROS_nucleo_bridge" output="screen"/>
+</launch>
