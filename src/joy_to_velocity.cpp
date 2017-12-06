@@ -31,6 +31,14 @@ void JoyCallBack(const sensor_msgs::Joy &msg) {
 #endif
 
 #ifdef PS3
+  velocity.x = (-1) * Base_Linear_Vel * msg.axes[0];
+  velocity.y = Base_Linear_Vel * msg.axes[1];
+  if (msg.buttons[10])
+    velocity.z = Base_Angular_Vel;
+  else if (msg.buttons[11])
+    velocity.z = (-1) * Base_Angular_Vel;
+  else
+    velocity.z = 0;
 #endif
 
   ROS_INFO_STREAM_ONCE("HAVE JOY !!");

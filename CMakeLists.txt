@@ -200,6 +200,9 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
+#c++11をROSで使えるようにする
+add_definitions(-std=c++11)
+
 add_executable(joy_to_velocity src/joy_to_velocity.cpp)
 target_link_libraries(joy_to_velocity ${catkin_LIBRARIES} )
 add_executable(mimic_localization src/mimic_localization.cpp)
@@ -208,5 +211,5 @@ add_executable(make_path_CSV src/make_path_CSV.cpp)
 target_link_libraries(make_path_CSV ${catkin_LIBRARIES} )
 add_executable(ROS_nucleo_bridge src/ROS_nucleo_bridge.cpp)
 target_link_libraries(ROS_nucleo_bridge ${catkin_LIBRARIES} )
-#add_executable(path_following src/path_following.cpp)
-#target_link_libraries(path_following ${catkin_LIBRARIES} )
+add_executable(path_following src/path_following.cpp)
+target_link_libraries(path_following ${catkin_LIBRARIES} )

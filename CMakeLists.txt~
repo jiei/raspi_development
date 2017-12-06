@@ -200,6 +200,9 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
+#c++11をROSで使えるようにする
+set(CMAKE_CXX_FLAGS “-std=c++0x ${CMAKE_CXX_FLAGS}”)
+
 add_executable(joy_to_velocity src/joy_to_velocity.cpp)
 target_link_libraries(joy_to_velocity ${catkin_LIBRARIES} )
 add_executable(mimic_localization src/mimic_localization.cpp)

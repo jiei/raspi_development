@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
       break;
     }
   }
-
+  fout << '.' << std::endl;
   fout.close();
 
   return 0;
@@ -149,8 +149,14 @@ void CreatePathPoints(PathData *p) {
   for (double t = 0; t <= 1; t += BEZIER_PARAM_INTERVAL) {
     point_tmp.x = (1 - t) * (1 - t) * start_point.x +
                   2 * (1 - t) * t * control_point.x + t * t * end_point.x;
+    if (point_tmp.x > -0.0001 && point_tmp.x < 0.0001) {
+      point_tmp.x = 0;
+    }
     point_tmp.y = (1 - t) * (1 - t) * start_point.y +
                   2 * (1 - t) * t * control_point.y + t * t * end_point.y;
+    if (point_tmp.y > -0.0001 && point_tmp.y < 0.0001) {
+      point_tmp.y = 0;
+    }
     if (CalcDistBetweenPoints(point_tmp, p->points.back()) >
         (POINTS_INTERVAL * POINTS_INTERVAL)) {
       p->points.push_back(point_tmp);
