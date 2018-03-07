@@ -23,9 +23,9 @@ int main(int argc, char **argv) {
   ros::NodeHandle local_nh("~");
 
   ros::Subscriber velocity_sub =
-      n.subscribe("target_velocity", 1, VelocityCallBack);
+      n.subscribe("/target_velocity", 1, VelocityCallBack);
   ros::Publisher mimic_pose_pub =
-      n.advertise<geometry_msgs::Pose2D>("mimic_pose", 1);
+      n.advertise<geometry_msgs::Pose2D>("/machine_pose", 1);
   ros::Rate loop_rate(30);
 
   double now = ros::Time::now().toSec();

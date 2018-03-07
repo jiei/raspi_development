@@ -2,12 +2,14 @@
 #include <geometry_msgs/Vector3.h>
 #include <ros/ros.h>
 #include <std_msgs/Int16MultiArray.h>
+#include <std_msgs/Int8.h>
 
 /*
 To nucleo
   0:  target_velocity/x[m/s] -> ros_data[0][cm/s]
   1:  target_velocity/y[m/s] -> ros_data[1][cm/s]
   2:  target_velocity/rotation[rad/s] -> ros_data[2][crad/s]
+  3:  button_state/data -> ros_data[3]
 
 From nucleo
   0:  nuc_data/data[0][mm] -> pose/x[m]
@@ -25,6 +27,11 @@ void VelocityCallBack(const geometry_msgs::Vector3 &msg) {
   ROS_INFO_STREAM_ONCE("receive velocity !!");
 }
 
+void ButtonStateCallBack(const std_msgs::Int8 &msg) {
+  ros_data.data[3] = msg.data;
+  ROS_INFO_STREAM_ONCE("receive button state !!");
+}
+
 void NucleoCallBack(const std_msgs::Int16MultiArray &msg) {
   machine_pose.x = double(msg.data[0]) / 1000;
   machine_pose.y = double(msg.data[1]) / 1000;
@@ -39,7 +46,9 @@ int main(int argc, char **argv) {
 
   ros::Subscriber vel_sub =
       n.subscribe("/target_velocity", 1, VelocityCallBack);
-  /*ros::Subscriber joy_sub = n.subscribe("/joy", 1, JoyCallBack);
+  ros::Subscriber but_sub =
+      n.subscribe("/button_state", 1, ButtonStateCallBack);
+  /*
   ros::Subscriber nuc_sub = n.subscribe("/nucleo_data", 1, NucleoCallBack);*/
 
   ros::Publisher ros_pub =
@@ -50,6 +59,7 @@ int main(int argc, char **argv) {
 
   // initialize
   ros_data.data.clear();
+  ros_data.data.push_back(0);
   ros_data.data.push_back(0);
   ros_data.data.push_back(0);
   ros_data.data.push_back(0);

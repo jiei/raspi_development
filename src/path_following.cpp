@@ -1,6 +1,8 @@
 #include <cstdlib>
 #include <fstream>
+#include <geometry_msgs/Pose2D.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Vector3.h>
 #include <iostream>
 #include <nav_msgs/Path.h>
 #include <raspi_development/path_to_RViz.h>
@@ -29,9 +31,18 @@ struct PathData {
   std::vector<Point2D> points; //経路座標の動的配列
 };
 
-void InputPath(std::vector<PathData> *path, std::string file_name);
-
 std::vector<PathData> path;
+geometry_msgs::Vector3 velocity;
+geometry_msgs::Pose2D machine_pose;
+
+void PoseCallBack(const geometry_msgs::Pose2D &msg) {
+  machine_pose.x = msg.x;
+  machine_pose.y = msg.y;
+  machine_pose.theta = msg.theta;
+  ROS_INFO_STREAM_ONCE("Received location !!");
+}
+
+void InputPath(std::vector<PathData> *path, std::string file_name);
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "path_following");
@@ -39,6 +50,11 @@ int main(int argc, char **argv) {
   ros::NodeHandle local_nh("~");
   ros::ServiceClient path_client =
       n.serviceClient<raspi_development::path_to_RViz>("path_bridge_srv");
+  ros::Publisher velocity_pub =
+      n.advertise<geometry_msgs::Vector3>("/target_velocity", 1);
+  ros::Subscriber loc_sub = n.subscribe("/machine_pose", 1, PoseCallBack);
+
+  ros::Rate loop_rate(30);
 
   if (argv[1] == NULL) {
     ROS_ERROR("Invalid argment : Must input path-file name");
@@ -57,6 +73,13 @@ int main(int argc, char **argv) {
     std::cout << "first_point = (" << path[i].points[0].x << ","
               << path[i].points[0].y << ")" << '\n';
     std::cout << "point_num = " << path[i].points.size() << '\n';
+  }
+
+  while (ros::ok()) {
+    ros::spinOnce();
+    PathFollowing();
+    velocity_pub.publish(velocity);
+    loop_rate.sleep();
   }
 
   return 0;
@@ -146,4 +169,79 @@ void InputPath(std::vector<PathData> *path, std::string file_name) {
     }
     line_count++;
   }
+}
+
+double CalcDistOfBezier(int Ps[2], int Pc[2], int Pf[2], int Pt[2],
+                        double *p_t) {
+  double P_sample[2][10];
+  double sample_distance2[10];
+  double min_distance[2];
+
+  double t_interval = 0.1;
+  double t_cand[2] = {0, 1};
+  double P_min[2][2];
+  double distance;
+  double The_point[2];
+  int count = 0;
+
+  while (t_interval > 0.000001) {
+
+    for (int i = 0; i < 10; i++) {
+      P_sample[0][i] =
+          BezierPlots(Ps[0], Pc[0], Pf[0], t_cand[0] + i * t_interval);
+      P_sample[1][i] =
+          BezierPlots(Ps[1], Pc[1], Pf[1], t_cand[0] + i * t_interval);
+      sample_distance2[i] =
+          (Pt[0] - P_sample[0][i]) * (Pt[0] - P_sample[0][i]) +
+          (Pt[1] - P_sample[1][i]) * (Pt[1] - P_sample[1][i]);
+      count++;
+    }
+
+    min_distance[0] = sample_distance2[0];
+    min_distance[1] = 0;
+
+    for (int i = 0; i < 10; i++) {
+      if (sample_distance2[i] <= min_distance[0]) {
+        min_distance[0] = sample_distance2[i];
+        min_distance[1] = i;
+      }
+    }
+
+    if (min_distance[1] == 0) {
+      *p_t = t_cand[0];
+      The_point[0] = BezierPlots(Ps[0], Pc[0], Pf[0], t_cand[0]);
+      The_point[1] = BezierPlots(Ps[1], Pc[1], Pf[1], t_cand[0]);
+      break;
+    } else if (min_distance[1] == 9) {
+      *p_t = t_cand[1];
+      The_point[0] = BezierPlots(Ps[0], Pc[0], Pf[0], t_cand[1]);
+      The_point[1] = BezierPlots(Ps[1], Pc[1], Pf[1], t_cand[1]);
+      break;
+    }
+
+    t_cand[0] = t_cand[0] + (min_distance[1] - 1) * t_interval;
+    t_cand[1] = t_cand[0] + (min_distance[1] + 1) * t_interval;
+
+    t_interval = (t_cand[1] - t_cand[0]) / 20;
+
+    P_min[0][0] = BezierPlots(Ps[0], Pc[0], Pf[0], t_cand[0]);
+    P_min[0][1] = BezierPlots(Ps[1], Pc[1], Pf[1], t_cand[0]);
+    P_min[1][0] = BezierPlots(Ps[0], Pc[0], Pf[0], t_cand[1]);
+    P_min[1][1] = BezierPlots(Ps[1], Pc[1], Pf[1], t_cand[1]);
+
+    distance = sqrt((P_min[0][0] - P_min[1][0]) * (P_min[0][0] - P_min[1][0]) +
+                    (P_min[0][1] - P_min[1][1]) * (P_min[0][1] - P_min[1][1]));
+
+    if (distance < 0.01) {
+      *p_t = (t_cand[0] + t_cand[1]) / 2;
+      The_point[0] =
+          BezierPlots(Ps[0], Pc[0], Pf[0], (t_cand[0] + t_cand[1]) / 2);
+      The_point[1] =
+          BezierPlots(Ps[1], Pc[1], Pf[1], (t_cand[0] + t_cand[1]) / 2);
+      break;
+    }
+  }
+
+  printf("count : %d\n", count);
+  return sqrt(pow(The_point[0] - Pt[0], 2.0) + pow(The_point[1] - Pt[1], 2.0));
 }

@@ -1,9 +1,7 @@
-#define _CRT_NONSTDC_NO_WARNINGS
-
 #include <geometry_msgs/Vector3.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Joy.h>
-#include <std_msgs/Int8MultiArray.h>
+#include <std_msgs/Int8.h>
 #include <stdio.h>
 #include <termios.h>
 // mode
@@ -11,7 +9,17 @@
 //#define PS3
 //#define KEY
 
-std_msgs::Int8MultiArray button;
+/*
+    button data -> Int8 button
+      1 : Logicool
+      2 : start
+      3 : A
+      4 : B
+      5 : X
+      6 : Y
+*/
+
+std_msgs::Int8 button;
 geometry_msgs::Vector3 velocity;
 
 void getKey();
@@ -28,6 +36,14 @@ void JoyCallBack(const sensor_msgs::Joy &msg) {
     velocity.z = (-1) * Base_Angular_Vel;
   else
     velocity.z = 0;
+
+  button.data = 0;
+  button.data += msg.buttons[8];      // Logicool
+  button.data += msg.buttons[7] << 1; // start
+  button.data += msg.buttons[0] << 2; // A
+  button.data += msg.buttons[1] << 3; // B
+  button.data += msg.buttons[2] << 4; // X
+  button.data += msg.buttons[3] << 5; // Y
 #endif
 
 #ifdef PS3
@@ -53,12 +69,13 @@ int main(int argc, char **argv) {
   ros::Subscriber joy_sub = n.subscribe("/joy", 1, JoyCallBack);
   ros::Publisher velocity_pub =
       n.advertise<geometry_msgs::Vector3>("/target_velocity", 1);
+  ros::Publisher button_pub = n.advertise<std_msgs::Int8>("/button_state", 1);
   ros::Rate loop_rate(30);
 
   if (!local_nh.hasParam("Base_Linear_Vel")) {
     ROS_INFO("Parameter Base_Linear_Vel is not defined. Now, it is set default "
              "value");
-    local_nh.setParam("Base_Linear_Vel", 1.0);
+    local_nh.setParam("Base_Linear_Vel", 0.3);
   }
   if (!local_nh.getParam("Base_Linear_Vel", Base_Linear_Vel)) {
     ROS_ERROR("No value set on Base_Linear_Vel");
@@ -68,7 +85,7 @@ int main(int argc, char **argv) {
   if (!local_nh.hasParam("Base_Angular_Vel")) {
     ROS_INFO("Parameter Base_Angular_Vel is not defined. Now, it is set "
              "default value");
-    local_nh.setParam("Base_Angular_Vel", 0.5);
+    local_nh.setParam("Base_Angular_Vel", 0.3);
   }
   if (!local_nh.getParam("Base_Angular_Vel", Base_Angular_Vel)) {
     ROS_ERROR("No value set on Base_Angular_Vel");
@@ -76,79 +93,9 @@ int main(int argc, char **argv) {
   }
 
   while (ros::ok()) {
-#ifdef KEY
-    getKey();
-#endif
     velocity_pub.publish(velocity);
+    button_pub.publish(button);
     ros::spinOnce();
     loop_rate.sleep();
   }
 }
-
-#ifdef KEY
-void getKey() {
-  char key;
-
-  ROS_INFO("auf");
-
-  if (getchar()) {
-    switch (getchar()) {
-    case 'q':
-      velocity.x = (-1) * Base_Linear_Vel;
-      velocity.y = Base_Linear_Vel;
-      velocity.z = 0;
-      break;
-    case 'w':
-      velocity.x = 0;
-      velocity.y = Base_Linear_Vel;
-      velocity.z = 0;
-      break;
-    case 'e':
-      velocity.x = Base_Linear_Vel;
-      velocity.y = Base_Linear_Vel;
-      velocity.z = 0;
-      break;
-    case 'a':
-      velocity.x = (-1) * Base_Linear_Vel;
-      velocity.y = 0;
-      velocity.z = 0;
-      break;
-    case 'd':
-      velocity.x = Base_Linear_Vel;
-      velocity.y = 0;
-      velocity.z = 0;
-      break;
-    case 'z':
-      velocity.x = (-1) * Base_Linear_Vel;
-      velocity.y = (-1) * Base_Linear_Vel;
-      velocity.z = 0;
-      break;
-    case 'x':
-      velocity.x = 0;
-      velocity.y = (-1) * Base_Linear_Vel;
-      velocity.z = 0;
-      break;
-    case 'c':
-      velocity.x = Base_Linear_Vel;
-      velocity.y = (-1) * Base_Linear_Vel;
-      velocity.z = 0;
-      break;
-    case 'o':
-      velocity.x = 0;
-      velocity.y = 0;
-      velocity.z = Base_Angular_Vel;
-      break;
-    case 'p':
-      velocity.x = 0;
-      velocity.y = 0;
-      velocity.z = (-1) * Base_Angular_Vel;
-      break;
-    default:
-      velocity.x = 0;
-      velocity.y = 0;
-      velocity.z = 0;
-      break;
-    }
-  }
-}
-#endif
